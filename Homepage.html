@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Synbion Odor Monitoring Dashboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Synbion Odor Monitoring Dashboard</h1>
+        <div class="input-container">
+            <label for="sim">Enter SIM value:</label>
+            <input type="number" id="sim" class="input-field">
+        </div>
+        <button class="update-button" onclick="updateGraph()">Update Graph</button>
+        <div class="chart-container">
+            <canvas id="simChart"></canvas>
+        </div>
+        <div class="condition">
+            <h3>Risk Meter</h3>
+            <div class="risk-meter">
+                <div class="risk-meter-fill" id="riskMeterFill"></div>
+            </div>
+        </div>
+        <div class="alert-container">
+            <div class="last-alert-container">
+                <h3>Last Alert Of Poor Odor</h3>
+                <p id="lastAlertTime"></p>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>
