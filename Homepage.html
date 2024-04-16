@@ -50,13 +50,12 @@
                     const rows = data.trim().split('\n').slice(1);
                     chartData.length = 0; // Clear the chartData array
                     chart.data.labels.length = 0; // Clear the chart.data.labels array
+                    let simValue = 0; // Initialize simValue to 0
                     rows.forEach((row, index) => {
                         const columns = row.split(',');
-                        const date = columns[0];
-                        const time = columns[1];
-                        const simValue = parseFloat(columns[7]);
+                        simValue = parseFloat(columns[7]); // Update simValue with the latest value from the spreadsheet
                         chartData.push(simValue);
-                        chart.data.labels[index] = `${date} ${time}`;
+                        chart.data.labels[index] = `${columns[0]} ${columns[1]}`;
                     });
                     chart.update();
 
@@ -77,8 +76,7 @@
                 fillPercentage = 25;
             }
 
-            riskMeterFill.style.width = fillPercentage + '%';if (simValue < 80) {
-                riskMeterFill.style.backgroundColor = 'red';
+            riskMeterFill.style.width = fillPercentage + '%';if (simValue < 80) {riskMeterFill.style.backgroundColor = 'red';
                 lastAlertTime = new Date().toLocaleString();
                 document.getElementById('lastAlertTime').textContent = 'Last Alert Time: ' + lastAlertTime;
             } else if (simValue >= 80 && simValue <= 85) {
