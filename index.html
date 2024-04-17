@@ -6,15 +6,19 @@
     <title>Synbion Odor Monitoring Dashboard</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.css">
+    <script src="https://unpkg.com/fetch-polyfill@0.25.6/fetch.min.js"></script>
     <script src="https://cdn.jsdelivr.net/chartist.js/latest/chartist.min.js"></script>
+   
 </head>
 <body>
     <div class="container">
         <h1>Synbion Odor Monitoring Dashboard</h1>
-        
         <button class="update-button" onclick="updateGraph()">Update Graph</button>
         <div class="chart-container">
             <div id="simChart" class="ct-chart"></div>
+            <div class="loading-overlay" id="loadingOverlay">
+                <div class="loading-spinner"></div>
+            </div>
         </div>
         <div class="condition">
             <h3>Risk Meter</h3>
@@ -30,8 +34,40 @@
         </div>
     </div>
 
+    <style>
+       .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.7);
+            z-index: 999;
+            display: none;
+        }
+
+       .loading-spinner {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+
     <script>
         let chartData = [];
+        let isLoading = false;
 
         let chart = new Chartist.Line('#simChart', {
             series: [chartData]
@@ -44,9 +80,21 @@
         });
 
         function updateGraph() {
+            if (isLoading) return;
+
+            isLoading = true;
+            const loadingOverlay = document.getElementById('loadingOverlay');
+            loadingOverlay.style.display = 'flex';
+
             fetch('https://docs.google.com/spreadsheets/d/e/2PACX-1vQl7e9auhEqQOOJd9MsbPVyaJpn4v6MOAovjFm-esHVWj-7MM8h7qhNFnoEGukmGmEksCTMegEb3W5P/pub?output=csv')
-                .then(response => response.text())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch data');
+                    }
+                    return response.text();
+                })
                 .then(data => {
+                    console.log('Data fetched successfully:', data);
                     const rows = data.trim().split('\n').slice(1);
                     chartData.length = 0; // Clear the chartData array
                     chart.data.labels.length = 0; // Clear the chart.data.labels array
@@ -54,13 +102,25 @@
                     rows.forEach((row, index) => {
                         const columns = row.split(',');
                         simValue = parseFloat(columns[7]); // Update simValue with the latest value from the spreadsheet
-                        chartData.push(simValue);
+                        if (isNaN(simValue)) {
+                            console.warn(`Invalid simValue at index ${index}:`, simValue);
+                            return;
+                        }
+                        chartData.push({x: new Date(columns[0] + ' ' + columns[1]), y: simValue});
                         chart.data.labels[index] = `${columns[0]} ${columns[1]}`;
                     });
                     chart.update();
 
                     // Call updateRiskMeter() function with the simValue fetched from the spreadsheet
                     updateRiskMeter(simValue);
+                })
+                .catch(error => {
+                    console.error('Error fetching data:', error);
+                    // Handle error: You can show a message to the user or perform any other necessary action.
+                })
+                .finally(() => {
+                    isLoading = false;
+                    loadingOverlay.style.display = 'none';
                 });
         }
 
@@ -76,7 +136,9 @@
                 fillPercentage = 25;
             }
 
-            riskMeterFill.style.width = fillPercentage + '%';if (simValue < 80) {riskMeterFill.style.backgroundColor = 'red';
+            riskMeterFill.style.width = fillPercentage + '%';
+            if (simValue < 80) {
+                riskMeterFill.style.backgroundColor = 'red';
                 lastAlertTime = new Date().toLocaleString();
                 document.getElementById('lastAlertTime').textContent = 'Last Alert Time: ' + lastAlertTime;
             } else if (simValue >= 80 && simValue <= 85) {
@@ -88,15 +150,11 @@
 
         // Add time to the chart
         setInterval(() => {
-            chartData.push({x: new Date(), y: null});
-            chart.update();
+            if (!isLoading) {
+                chartData.push({x: new Date(), y: null});
+                chart.update();
+            }
         }, 60000);
-
-        // Call updateRiskMeter() function when the input field value changes
-        document.getElementById('sim').addEventListener('input', () => {
-            const simValue = parseFloat(document.getElementById('sim').value);
-            updateRiskMeter(simValue);
-        });
     </script>
 </body>
 </html>
